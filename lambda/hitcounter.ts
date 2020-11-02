@@ -17,19 +17,21 @@ export const handler = async (event : any): Promise<any> =>
 
     }
 
-    let errorHandler : any = (err : Error, data : any) =>
-    {
-        if(err)
-        {
-            console.log(err, err.stack);
-        }
-        else
-        {
-            console.log(data);
-        }
-    };
-
-    await dynamo.updateItem(updateParam, errorHandler);
+    await dynamo.updateItem
+            (
+                updateParam, 
+                (err : Error, data : any) =>
+                {
+                    if(err)
+                    {
+                        console.log(err, err.stack);
+                    }
+                    else
+                    {
+                        console.log(data);
+                    }
+                }
+            );
 
     console.log("Building invocation request");
     let invokeLambda : Lambda.InvocationRequest = 
@@ -49,6 +51,7 @@ export const handler = async (event : any): Promise<any> =>
                     {
                         if(err)
                         {
+                            console.log(err, err.stack);
                             reject(err);
                         }
                         else
