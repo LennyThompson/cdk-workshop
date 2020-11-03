@@ -1,7 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as apigateway from '@aws-cdk/aws-apigateway';
-import { HitCounter } from './hitcounter';
+import { RecordTemperature } from './RecordTemperatureConstruct';
 export class CdkWorkshopStack extends cdk.Stack
 {
     constructor(scope: cdk.App, id: string, props?: cdk.StackProps)
@@ -18,21 +18,12 @@ export class CdkWorkshopStack extends cdk.Stack
             }
         );
 
-        const helloWithCounter = new HitCounter
+        const recordTemperature = new RecordTemperature
         (
             this, 
-            'HelloHitCounter',
+            'RecordTemperatureStack',
             {
                 downstream : hello
-            }
-        );
-
-        new apigateway.LambdaRestApi
-        (
-            this,
-            'Endpoint',
-            {
-                handler : helloWithCounter.handler
             }
         );
     }
