@@ -1,16 +1,22 @@
 import { DynamoDB, Lambda } from "aws-sdk";
 
+// Handler for recording the machine temperature and status to dynamoDB.
+// Triggered in response to published message on topic "machine/tempreature"
+// presumably from a machine at the edge
+
 export const handler = async (event: any): Promise<any> =>
 {
     console.log("event:", JSON.stringify(event, undefined, 2));
     
     const dynamo = new DynamoDB();
     const lambda = new Lambda();
+    
+    // Build the status record and write to dynamodb table
+
     let strStatusname : string = process.env.STATUS_TABLE_NAME!;
-    let strMachine = event.machine ? "unknown" : event.machine;
     let status: any = 
     {
-        'machine' : { S : 'unknown' },
+        'machine' : { S : event.machine ? event.machine : "unknown" },
         'status' : { S: event.CPU ? 'RUNNING' : (event.message === 'Resume' ? 'STARTING' : 'STOPPED') },
         'time' : { S: event.time },
         'logged' : { S: new Date().toISOString() }
@@ -39,11 +45,13 @@ export const handler = async (event: any): Promise<any> =>
         }
     );
 
+    // If the message contains a CPU temperature, build the temperature record and write to dynamodb table
+
     if(event.CPU)
     {
         let strTablename : string = process.env.TEMPERATURE_TABLE_NAME!;
         let temperatureItem: any = {
-            'machine' : { S: 'unknown' },
+            'machine' : { S: event.machine ? event.machine : "unknown" },
             'temperature' : { N: event.CPU ? event.CPU.toString() : '0.0' },
             'time' : { S: event.time },
             'message' : { S : event.message }
@@ -70,6 +78,8 @@ export const handler = async (event: any): Promise<any> =>
             }
         );
     }
+
+    // Send the event on to the next lambda
 
     console.log("Building invocation request");
     let invokeLambda : Lambda.InvocationRequest = 
