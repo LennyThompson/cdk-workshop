@@ -1,5 +1,6 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
+import * as elastic from '@aws-cdk/aws-elasticsearch';
 import { RecordTemperature } from './RecordTemperatureConstruct';
 
 export class CdkWorkshopStack extends cdk.Stack
@@ -8,17 +9,31 @@ export class CdkWorkshopStack extends cdk.Stack
     {
         super(scope, id, props);
 
-        // Construct a 'chained' lambda - this will be called from a lambda in the 
-        // RecordTemperature construct
+        // Construct a new elastic search instance at developer level...
+        const elasticConstruct = new elastic.Domain
+        (
+            this, 
+            'Domain', 
+            {
+                version: elastic.ElasticsearchVersion.V7_1,
+            }
+        );
 
-        const hello = new lambda.Function
+        // Construct an 'chained' lambda - this will be called from a lambda in the 
+        // RecordTemperature construct to forward messages to elastic search
+
+        const elasticLambda = new lambda.Function
         (
             this,
-            'HelloHandler',
+            'ElasticWriter',
             {
                 runtime : lambda.Runtime.NODEJS_12_X,
                 code : lambda.Code.fromAsset('lambda'),
-                handler : 'hello.handler'
+                handler : 'Elastic.handler',
+                environment :
+                {
+                    ELASTICSEARCH_DOMAIN: elasticConstruct.domainEndpoint
+                }
             }
         );
 
@@ -30,7 +45,7 @@ export class CdkWorkshopStack extends cdk.Stack
             this, 
             'RecordTemperatureStack',
             {
-                downstream : hello
+                downstream : elasticLambda
             }
         );
     }

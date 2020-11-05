@@ -1,7 +1,36 @@
 language: node_js
 node_js:
   - "12"
+services: docker
+sudo: required
 
-script: npm run build
+env:
+  AWS_ACCESS_KEY_ID=AKIAYBNTQ3VFJLMD46UK
+  AWS_ACCOUNT_NUMBER=552816663882
+  AWS_DEFAULT_REGION=ap-southeast-2
+  AWS_SECRET_ACCESS_KEY=7FWDpE1TATR+fhU3PT0pTN04kn4grHFTgqACHOTT
+  CDK_DEFAULT_ACCOUNT=552816663882
+  CDK_DEFAULT_REGION=ap-southeast-2
+
+before_install:
+  - sudo /etc/init.d/postgresql stop
+  - sudo python -m pip install awscli
+  - npm install -g typescript 
+  - npm install -g aws-cdk
+  - npm install
+
+stages:
+  - name: Deploy Test
+
+
+jobs:
+  include:
+    - stage: Deploy Test
+      name: Deploy to AWS Cloud
+      script:
+        - npm run build
+        - cdk deploy --require-approval never
+        - BASE_URL=$(aws cloudformation describe-stacks --stack-name ApiLambdaCrudDynamoDBExample --query "Stacks[0].Outputs[0].OutputValue" --output text)
+        - newman run test/alf-cdk.postman_collection.json --env-var baseUrl="$BASE_URL" -r cli,json --reporter-json-export dist/newman/report.json
 
 
